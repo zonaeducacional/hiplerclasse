@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">hiperclasse</string>
+    <string name="title_activity_main">hiperclasse</string>
+    <string name="package_name">br.com.zonaeducacional.hiperclasse</string>
+    <string name="custom_url_scheme">br.com.zonaeducacional.hiperclasse</string>
+</resources>
