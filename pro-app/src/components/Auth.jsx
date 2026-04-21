@@ -17,6 +17,13 @@ export default function Auth() {
     if (!alias.trim() || !pass) return showMsg("Defina um Nome de Usuário e uma Chave.");
     if (pass.length < 8) return showMsg("A chave de acesso deve ter pelo menos 8 caracteres.");
     
+    if (category === 'Mediador-Desenvolvedor') {
+      const secret = prompt("Acesso restrito. Insira a Chave-Mestra Pedagógica:");
+      if (secret !== "salinas2026") {
+        return showMsg("Chave-Mestra incorreta. Operação cancelada.");
+      }
+    }
+
     user.create(alias, pass, (ack) => {
       if (ack.err) return showMsg("Erro: " + ack.err);
       showMsg("Cadastro realizado! Sincronizando perfil...", false);
