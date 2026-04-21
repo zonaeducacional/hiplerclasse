@@ -72,7 +72,7 @@ export default function Auth() {
               type="text" 
               value={alias} onChange={e => setAlias(e.target.value)}
               className="w-full bg-white bg-opacity-40 border border-ink p-3 focus:outline-none focus:border-[var(--color-sepia-dark)] transition-all rounded-none" 
-              placeholder="Ex: Sergio_Pedagogo" 
+              placeholder="nome de usuário" 
             />
           </div>
           <div>
