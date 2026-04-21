@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hyperclasse | Rede de Aprendizagem P2P Salinas</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Gun.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --paper: #f4ecd8;
+            --ink: #1a1a1b;
+            --sepia-dark: #433422;
+            --sepia-light: #d6c6a5;
+            --accent: #8c7851;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--paper);
+            color: var(--ink);
+            background-image: url('https://www.transparenttextures.com/patterns/paper.png');
+            overflow-x: hidden;
+        }
+
+        .font-serif {
+            font-family: 'Crimson Pro', serif;
+        }
+
+        .glass-sepia {
+            background: rgba(214, 198, 165, 0.3);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(67, 52, 34, 0.1);
+        }
+
+        .sepia-shadow {
+            box-shadow: 0 10px 30px rgba(67, 52, 34, 0.1);
+        }
+
+        .border-ink {
+            border-color: rgba(26, 26, 27, 0.15);
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .animate-slide {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: flex;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Message Bubbles */
+        .message-bubble {
+            max-width: 85%;
+            border-radius: 2px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            position: relative;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .message-mine {
+            background-color: var(--sepia-dark);
+            color: var(--paper);
+            align-self: flex-end;
+            border-right: 4px solid var(--accent);
+        }
+
+        .message-others {
+            background-color: white;
+            color: var(--ink);
+            align-self: flex-start;
+            border-left: 4px solid var(--sepia-light);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: var(--paper); }
+        ::-webkit-scrollbar-thumb { background: var(--sepia-light); border-radius: 5px; }
+
+        .nav-link.active {
+            background-color: var(--sepia-dark);
+            color: var(--paper);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--paper)] bg-opacity-98">
+        <div class="max-w-md w-full glass-sepia p-10 rounded-sm sepia-shadow text-center">
+            <h1 class="text-5xl font-serif font-bold text-[var(--sepia-dark)] mb-2 tracking-tight">HYPERCLASSE</h1>
+            <p class="text-[10px] text-[var(--sepia-dark)] opacity-60 tracking-[0.3em] uppercase mb-8">Rede P2P de Salinas da Margarida</p>
+            
+            <div class="h-px w-full bg-[var(--sepia-dark)] opacity-10 mb-8"></div>
+
+            <div class="space-y-5 text-left">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-widest mb-1 opacity-50">Identidade (Alias)</label>
+                    <input type="text" id="username" class="w-full bg-white bg-opacity-40 border border-ink p-3 focus:outline-none focus:border-[var(--sepia-dark)] transition-all rounded-none" placeholder="Ex: Sergio_Pedagogo">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-widest mb-1 opacity-50">Chave de Acesso</label>
+                    <input type="password" id="password" class="w-full bg-white bg-opacity-40 border border-ink p-3 focus:outline-none focus:border-[var(--sepia-dark)] transition-all rounded-none" placeholder="••••••••">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-widest mb-1 opacity-50">Categoria / Vínculo</label>
+                    <select id="user-category" class="w-full bg-white bg-opacity-40 border border-ink p-3 focus:outline-none focus:border-[var(--sepia-dark)] transition-all rounded-none text-sm">
+                        <option value="Estudante/Aprendiz">Estudante / Aprendiz</option>
+                        <option value="Mediador-Desenvolvedor">Mediador / Desenvolvedor</option>
+                        <option value="Pesquisador Local">Pesquisador Local</option>
+                        <option value="Comunidade">Membro da Comunidade</option>
+                    </select>
+                </div>
+                <div class="flex gap-4 pt-4">
+                    <button id="login-btn" class="flex-1 bg-[var(--sepia-dark)] text-white py-4 font-bold hover:bg-black transition-all uppercase text-xs tracking-widest">Entrar</button>
+                    <button id="register-btn" class="flex-1 border border-[var(--sepia-dark)] text-[var(--sepia-dark)] py-4 font-bold hover:bg-[var(--sepia-dark)] hover:text-white transition-all uppercase text-xs tracking-widest">Cadastrar</button>
+                </div>
+            </div>
+            
+            <p id="auth-msg" class="mt-6 text-xs text-red-800 font-medium hidden"></p>
+
+            <div class="mt-12 opacity-30 italic text-[11px] font-serif">
+                "A educação é um ato de amor, por isso, um ato de coragem." — Paulo Freire
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application Shell -->
+    <div id="main-app" class="hidden flex flex-col h-screen overflow-hidden">
+        
+        <!-- Header -->
+        <header class="h-20 glass-sepia border-b border-ink flex items-center justify-between px-8 z-40">
+            <div class="flex items-center gap-6">
+                <div class="text-[var(--sepia-dark)]">
+                    <h2 class="font-serif text-3xl font-bold leading-none">Hyperclasse</h2>
+                    <p class="text-[9px] uppercase tracking-widest opacity-60 mt-1">Território de aprendizado</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-6">
+                <div class="text-right hidden md:block">
+                    <p id="user-display" class="text-xs font-bold text-[var(--sepia-dark)]"></p>
+                    <p id="category-display" class="text-[9px] uppercase tracking-tighter opacity-40"></p>
+                </div>
+                <button id="logout-btn" class="p-2 border border-ink hover:bg-red-50 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 flex overflow-hidden">
+            <!-- Sidebar Navigation -->
+            <nav id="sidebar" class="w-64 border-r border-ink bg-[var(--paper)] flex flex-col z-30">
+                <div class="p-6 space-y-1">
+                    <p class="text-[10px] font-bold uppercase tracking-widest opacity-30 mb-4 px-2">Navegação Crítica</p>
+                    
+                    <button data-view="manifesto" class="nav-link w-full text-left p-3 text-sm font-semibold hover:bg-white transition-all flex items-center gap-3 active">
+                        <span class="w-2 h-2 rounded-full bg-accent"></span> PPP
+                    </button>
+                    <button data-view="circulos" class="nav-link w-full text-left p-3 text-sm font-semibold hover:bg-white transition-all flex items-center gap-3">
+                        <span class="w-2 h-2 rounded-full bg-accent"></span> Rodas de Conversa
+                    </button>
+                    <button data-view="acervo" class="nav-link w-full text-left p-3 text-sm font-semibold hover:bg-white transition-all flex items-center gap-3">
+                        <span class="w-2 h-2 rounded-full bg-accent"></span> Biblioteca do Povo
+                    </button>
+                    <button data-view="producao" class="nav-link w-full text-left p-3 text-sm font-semibold hover:bg-white transition-all flex items-center gap-3">
+                        <span class="w-2 h-2 rounded-full bg-accent"></span> Laboratório Histórico
+                    </button>
+                    <!-- Admin Only -->
+                    <button id="admin-nav-link" data-view="admin" class="nav-link w-full text-left p-3 text-sm font-semibold hover:bg-white transition-all flex items-center gap-3 hidden border-t border-ink mt-4 bg-sepia-light bg-opacity-20">
+                        <span class="w-2 h-2 rounded-full bg-red-800"></span> Painel do Mediador
+                    </button>
+                </div>
+
+                <div class="mt-auto p-6">
+                    <div class="mt-4 flex items-center gap-2 opacity-30">
+                        <div class="w-2 h-2 bg-green-600 rounded-full animate-pulse"></div>
+                        <span class="text-[9px] font-bold uppercase tracking-tighter">Sincronizado P2P</span>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main Content Area -->
+            <main class="flex-1 relative overflow-hidden bg-white bg-opacity-10">
+                
+                <!-- View: PPP (Manifesto) -->
+                <section id="view-manifesto" class="view-section active h-full overflow-y-auto p-12 flex-col max-w-4xl mx-auto">
+                    <h3 class="font-serif text-4xl font-bold text-[var(--sepia-dark)] mb-6">Projeto Político Pedagógico</h3>
+                    <div class="space-y-8 font-serif text-lg leading-relaxed text-justify opacity-90 pb-20">
+                        <div class="border-b border-ink pb-8 mb-8">
+                            <h4 class="text-2xl font-bold mb-4">Rede de Aprendizagem Ponto a Ponto de Salinas da Margarida</h4>
+                            <p class="italic opacity-70">Este documento circunscreve as diretrizes pedagógicas e técnicas para a implementação de uma plataforma digital de aprendizagem por pares, fundamentada na pedagogia crítica e na soberania tecnológica.</p>
+                        </div>
+
+                        <div class="space-y-6">
+                            <h4 class="text-xl font-bold uppercase tracking-widest border-l-4 border-[var(--sepia-dark)] pl-4">1. Marco Situacional</h4>
+                            <p>Observa-se que a estrutura educacional contemporânea, mesmo quando transposta para o ambiente digital, frequentemente replica o modelo de "depósito" de informações. Em Salinas da Margarida, a transição para o digital não pode ser apenas uma mudança de suporte, mas uma reconfiguração das relações de poder sobre o conhecimento. O cenário atual exige uma ferramenta que rompa com o isolamento do aprendiz e com a dependência de plataformas proprietárias que mercantilizam os dados e os processos cognitivos.</p>
+                            <p>Esta proposta emerge da necessidade de criar um território de encontro para a classe trabalhadora e estudantes da região — especificamente aqueles vinculados à Escola Municipal Januário Eleodoro de Lima e arredores — permitindo que o saber local e a pesquisa histórica tornem-se o centro do currículo.</p>
+                        </div>
+
+                        <div class="space-y-6">
+                            <h4 class="text-xl font-bold uppercase tracking-widest border-l-4 border-[var(--sepia-dark)] pl-4">2. Marco Referencial</h4>
+                            <p>A fundamentação teórica desta plataforma repousa sobre quatro pilares indissociáveis:</p>
+                            <ul class="list-disc pl-8 space-y-4">
+                                <li><strong>Pedagogia Crítica (Paulo Freire):</strong> A plataforma é concebida como um grande "Círculo de Cultura" digital. O diálogo horizontal é a ferramenta de desalienação, onde mediador e educando constroem o saber a partir de temas geradores da realidade salineira.</li>
+                                <li><strong>Sociedade Desescolarizada:</strong> O projeto materializa as "redes de aprendizagem" facilitando o intercâmbio de habilidades e o acesso a recursos sem a necessidade de mediação institucional burocrática.</li>
+                                <li><strong>Materialismo Histórico:</strong> A educação é compreendida como prática social. A plataforma não é neutra; ela serve ao propósito de instrumentalizar o sujeito para a compreensão e transformação das estruturas de opressão.</li>
+                                <li><strong>Construtivismo Social (Vygotsky):</strong> A arquitetura digital prioriza a Zona de Desenvolvimento Proximal, utilizando a interação entre pares como o motor principal da aprendizagem.</li>
+                            </ul>
+                        </div>
+
+                        <div class="space-y-6">
+                            <h4 class="text-xl font-bold uppercase tracking-widest border-l-4 border-[var(--sepia-dark)] pl-4">3. Marco Operacional</h4>
+                            <p>A operacionalização da escola online dar-se-á através de uma dinâmica não-linear:</p>
+                            <ol class="list-decimal pl-8 space-y-4">
+                                <li><strong>Rodas de Conversa:</strong> Espaços síncronos e assíncronos onde os participantes propõem problemas e compartilham recursos.</li>
+                                <li><strong>Mediação Estratégica:</strong> O papel do desenvolvedor-mediador não é o de professor expositor, mas de curador de redes, garantindo que o debate mantenha o rigor crítico e a segurança do ambiente.</li>
+                                <li><strong>Curadoria Colaborativa:</strong> Repositório de fontes e documentos (como registros do Arquivo Nacional e historiografia local) que servem de base para a produção textual e histórica dos alunos.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View: Rodas de Conversa (Chat por Temas) -->
+                <section id="view-circulos" class="view-section h-full flex overflow-hidden">
+                    <!-- Themes Sidebar -->
+                    <div class="w-64 border-r border-ink flex flex-col bg-white bg-opacity-30">
+                        <div class="p-4 border-b border-ink flex justify-between items-center">
+                            <h4 class="text-[10px] font-bold uppercase tracking-widest opacity-50">Temas</h4>
+                            <button id="add-theme-btn" class="p-1 hover:bg-sepia-light rounded transition-colors" title="Sugerir Tema">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="themes-list" class="flex-1 overflow-y-auto">
+                            <!-- Themes load here -->
+                            <div class="p-4 text-[10px] italic opacity-30 text-center">Nenhum tema ativo.</div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Area -->
+                    <div class="flex-1 flex flex-col relative">
+                        <div id="chat-header" class="p-4 border-b border-ink glass-sepia">
+                            <h4 id="active-theme-title" class="font-serif font-bold text-lg">Selecione um Tema</h4>
+                            <p id="active-theme-desc" class="text-[10px] opacity-50 uppercase tracking-tighter">Escolha uma roda de conversa ao lado</p>
+                        </div>
+                        
+                        <div id="chat-messages" class="flex-1 overflow-y-auto p-8 flex flex-col gap-2 scroll-smooth bg-white bg-opacity-10">
+                            <div class="text-center py-10 opacity-30 italic text-sm">Aguardando seleção de tema...</div>
+                        </div>
+
+                        <div id="chat-input-area" class="p-6 bg-[var(--paper)] border-t border-ink hidden">
+                            <form id="chat-form" class="flex gap-4 max-w-5xl mx-auto">
+                                <input type="text" id="chat-input" class="flex-1 bg-white border border-ink px-6 py-4 focus:outline-none focus:border-[var(--sepia-dark)] text-sm rounded-none shadow-inner" placeholder="Contribua com o diálogo...">
+                                <button type="submit" class="bg-[var(--sepia-dark)] text-white px-10 py-4 font-bold uppercase text-xs tracking-widest hover:bg-black transition-all">Enviar</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View: Biblioteca do Povo (Acervo) -->
+                <section id="view-acervo" class="view-section h-full overflow-y-auto p-12 flex-col">
+                    <div class="flex justify-between items-end mb-10 border-b border-ink pb-6">
+                        <div>
+                            <h3 class="font-serif text-4xl font-bold text-[var(--sepia-dark)]">Biblioteca do Povo</h3>
+                            <p class="text-sm opacity-60">Curadoria de fontes históricas e documentos locais.</p>
+                        </div>
+                        <button id="add-doc-btn" class="text-[10px] font-bold uppercase tracking-widest border border-ink px-4 py-2 hover:bg-[var(--sepia-dark)] hover:text-white transition-all">Sugerir Documento</button>
+                    </div>
+
+                    <div id="docs-list" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="p-6 border border-ink bg-white bg-opacity-30 group cursor-pointer hover:border-[var(--sepia-dark)] transition-all sepia-shadow flex flex-col">
+                            <p class="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-2">Arquivo Nacional</p>
+                            <h4 class="font-serif text-xl font-bold mb-3 group-hover:text-[var(--sepia-dark)]">Registros de Salinas (Séc. XIX)</h4>
+                            <p class="text-xs leading-relaxed opacity-70 mb-4">Mapeamento histórico das marés e do desenvolvimento pesqueiro na região da Margarida.</p>
+                            <a href="#" class="text-[10px] font-bold uppercase tracking-widest text-accent border-t border-ink pt-3 inline-block">Consultar Documento →</a>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View: Laboratório Histórico (Produção) -->
+                <section id="view-producao" class="view-section h-full overflow-y-auto p-12 flex-col">
+                    <h3 class="font-serif text-4xl font-bold text-[var(--sepia-dark)] mb-6">Laboratório de Produção</h3>
+                    <p class="text-sm opacity-60 mb-10">Espaço para sistematização coletiva do conhecimento.</p>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-2 space-y-6">
+                            <div class="p-1 glass-sepia">
+                                <textarea id="prod-editor" class="w-full h-96 p-8 bg-white bg-opacity-50 font-serif text-lg leading-relaxed focus:outline-none border border-ink" placeholder="Inicie sua produção textual aqui..."></textarea>
+                            </div>
+                            <div class="flex justify-end">
+                                <button id="save-prod-btn" class="bg-[var(--sepia-dark)] text-white px-8 py-3 font-bold uppercase text-xs tracking-widest shadow-lg">Publicar no Laboratório</button>
+                            </div>
+                        </div>
+                        <div class="space-y-6">
+                            <h4 class="text-xs font-bold uppercase tracking-widest opacity-40 border-b border-ink pb-2">Produções Recentes</h4>
+                            <div id="recent-prods" class="space-y-4">
+                                <div class="text-xs italic opacity-40">Nenhuma produção compartilhada ainda.</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View: Painel do Mediador (ADMIN) -->
+                <section id="view-admin" class="view-section h-full overflow-y-auto p-12 flex-col bg-white bg-opacity-40">
+                    <div class="mb-10">
+                        <h3 class="font-serif text-4xl font-bold text-red-900">Painel do Mediador</h3>
+                        <p class="text-xs uppercase tracking-widest opacity-60">Gestão Pedagógica e Curadoria de Conteúdo</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                        <!-- Manage Library -->
+                        <div class="space-y-6">
+                            <h4 class="text-sm font-bold uppercase tracking-widest border-b border-ink pb-2">Gerenciar Biblioteca</h4>
+                            <form id="admin-add-doc-form" class="space-y-4 bg-[var(--paper)] p-6 border border-ink sepia-shadow">
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase mb-1">Título do Documento</label>
+                                    <input type="text" id="doc-title" class="w-full border border-ink p-2 text-sm bg-white" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase mb-1">Origem / Acervo</label>
+                                    <input type="text" id="doc-source" class="w-full border border-ink p-2 text-sm bg-white" placeholder="Ex: Arquivo Nacional">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold uppercase mb-1">Link ou Descrição Curta</label>
+                                    <textarea id="doc-desc" class="w-full border border-ink p-2 text-sm bg-white h-20"></textarea>
+                                </div>
+                                <button type="submit" class="w-full bg-[var(--sepia-dark)] text-white py-3 text-xs font-bold uppercase tracking-widest">Adicionar ao Acervo</button>
+                            </form>
+                        </div>
+
+                        <!-- Moderation Queue -->
+                        <div class="space-y-6">
+                            <h4 class="text-sm font-bold uppercase tracking-widest border-b border-ink pb-2 text-red-800">Fila de Moderação (Temas)</h4>
+                            <div id="admin-themes-queue" class="space-y-3">
+                                <!-- Pending themes go here -->
+                                <p class="text-xs italic opacity-40">Nenhuma solicitação pendente.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Gun.js Setup
+        const relays = ['https://gun-manhattan.herokuapp.com/gun', 'https://relay.peer.ooo/gun'];
+        const gun = Gun({ peers: relays });
+        const user = gun.user().recall({ sessionStorage: true });
+
+        // State
+        let isMediador = false;
+        let currentThemeId = null;
+
+        // DOM Elements
+        const authScreen = document.getElementById('auth-screen');
+        const mainApp = document.getElementById('main-app');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const authMsg = document.getElementById('auth-msg');
+        const loginBtn = document.getElementById('login-btn');
+        const registerBtn = document.getElementById('register-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const userDisplay = document.getElementById('user-display');
+        const categoryDisplay = document.getElementById('category-display');
+        const navLinks = document.querySelectorAll('.nav-link');
+        const viewSections = document.querySelectorAll('.view-section');
+
+        // Feature: Biblioteca (Acervo)
+        function initBiblioteca() {
+            const docsNode = gun.get('salinas_hyperclasse_biblioteca_v4');
+            const docsList = document.getElementById('docs-list');
+
+            docsNode.map().on((data, id) => {
+                if(!data || !data.title) return;
+                
+                let docEl = document.getElementById('doc-'+id);
+                if(!docEl) {
+                    docEl = document.createElement('div');
+                    docEl.id = 'doc-'+id;
+                    docEl.className = "p-6 border border-ink bg-white bg-opacity-30 group cursor-pointer hover:border-[var(--sepia-dark)] transition-all sepia-shadow flex flex-col";
+                    docsList.appendChild(docEl);
+                }
+
+                docEl.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="text-[10px] font-bold uppercase tracking-widest opacity-40">${data.source || 'Acervo Local'}</span>
+                        ${isMediador ? `<button class="delete-doc text-red-300 hover:text-red-700" data-id="${id}">×</button>` : ''}
+                    </div>
+                    <h4 class="font-serif text-xl font-bold mb-3 group-hover:text-[var(--sepia-dark)]">${data.title}</h4>
+                    <p class="text-xs leading-relaxed opacity-70 mb-6 flex-1">${data.desc || ''}</p>
+                    <a href="#" class="text-[10px] font-bold uppercase tracking-widest text-accent border-t border-ink pt-3 inline-block">Consultar Documento →</a>
+                `;
+
+                if(isMediador) {
+                    docEl.querySelector('.delete-doc').onclick = () => docsNode.get(id).put(null);
+                }
+            });
+        }
+
+        // Feature: Admin Control
+        function initAdmin() {
+            const themesNode = gun.get('salinas_hyperclasse_temas_v4');
+            const docsNode = gun.get('salinas_hyperclasse_biblioteca_v4');
+            const adminThemesQueue = document.getElementById('admin-themes-queue');
+            const docForm = document.getElementById('admin-add-doc-form');
+
+            // Themes Moderation in Admin Panel
+            themesNode.map().on((data, id) => {
+                if(!data || data.approved) {
+                    const el = document.getElementById('admin-theme-'+id);
+                    if(el) el.remove();
+                    return;
+                }
+
+                let el = document.getElementById('admin-theme-'+id);
+                if(!el) {
+                    el = document.createElement('div');
+                    el.id = 'admin-theme-'+id;
+                    el.className = "p-4 bg-white border border-ink flex justify-between items-center animate-slide";
+                    adminThemesQueue.appendChild(el);
+                }
+
+                el.innerHTML = `
+                    <div>
+                        <p class="text-sm font-bold">${data.title}</p>
+                        <p class="text-[9px] opacity-50 uppercase">Sugerido por ${data.creator}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="bg-green-700 text-white p-2 rounded" onclick="gun.get('salinas_hyperclasse_temas_v4').get('${id}').put({approved: true})">✓</button>
+                        <button class="bg-red-700 text-white p-2 rounded" onclick="gun.get('salinas_hyperclasse_temas_v4').get('${id}').put(null)">×</button>
+                    </div>
+                `;
+                
+                if(adminThemesQueue.querySelector('.italic')) adminThemesQueue.querySelector('.italic').remove();
+            });
+
+            // Add Documents
+            docForm.onsubmit = (e) => {
+                e.preventDefault();
+                const title = document.getElementById('doc-title').value;
+                const source = document.getElementById('doc-source').value;
+                const desc = document.getElementById('doc-desc').value;
+
+                docsNode.set({
+                    title, source, desc,
+                    when: Gun.state()
+                });
+
+                docForm.reset();
+                alert("Documento inserido na Biblioteca!");
+            };
+        }
+
+        // Authentication
+        function showMsg(text, isError = true) {
+            authMsg.innerText = text;
+            authMsg.style.color = isError ? '#991b1b' : '#166534';
+            authMsg.classList.remove('hidden');
+            setTimeout(() => authMsg.classList.add('hidden'), 6000);
+        }
+
+        registerBtn.onclick = () => {
+            const alias = usernameInput.value.trim();
+            const pass = passwordInput.value;
+            const category = document.getElementById('user-category').value;
+            
+            if(!alias || !pass) return showMsg("Defina um alias e uma chave.");
+            if(pass.length < 8) return showMsg("A chave de acesso deve ter pelo menos 8 caracteres.");
+            
+            user.create(alias, pass, (ack) => {
+                if(ack.err) return showMsg("Erro: " + ack.err);
+                
+                showMsg("Cadastro realizado! Sincronizando perfil...", false);
+                
+                user.auth(alias, pass, (authAck) => {
+                    if(!authAck.err) {
+                        user.get('profile').put({ category: category }, (putAck) => {
+                            if(!putAck.err) {
+                                // Perfil salvo com sucesso
+                                location.reload(); // Recarrega para garantir sincronia total
+                            }
+                        });
+                    }
+                });
+            });
+        };
+
+        loginBtn.onclick = () => {
+            const alias = usernameInput.value.trim();
+            const pass = passwordInput.value;
+            if(!alias || !pass) return showMsg("Preencha os campos.");
+            
+            user.auth(alias, pass, (ack) => {
+                if(ack.err) return showMsg("Chave incorreta ou alias não encontrado.");
+            });
+        };
+
+        logoutBtn.onclick = () => {
+            user.leave();
+            location.reload();
+        };
+
+        // Navigation
+        navLinks.forEach(link => {
+            link.onclick = () => {
+                const targetView = link.getAttribute('data-view');
+                navLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                viewSections.forEach(v => v.classList.remove('active'));
+                document.getElementById(`view-${targetView}`).classList.add('active');
+            };
+        });
+
+        // Auth State Listener
+        gun.on('auth', async () => {
+            authScreen.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+            
+            const alias = await user.get('alias').then();
+            
+            // Perfil P2P Sync
+            user.get('profile').once((profile) => {
+                const category = profile ? profile.category : 'Participante';
+                isMediador = (category === 'Mediador-Desenvolvedor');
+                
+                userDisplay.innerText = alias;
+                categoryDisplay.innerText = category;
+
+                if(isMediador) {
+                    const adminLink = document.getElementById('admin-nav-link');
+                    if(adminLink) {
+                        adminLink.classList.remove('hidden');
+                        initAdmin();
+                    }
+                }
+            });
+
+            initChat();
+            initLaboratorio();
+            initBiblioteca();
+        });
+
+        // Feature: Rodas de Conversa (Chat por Temas)
+        function initChat() {
+            const themesNode = gun.get('salinas_hyperclasse_temas_v4');
+            const themesList = document.getElementById('themes-list');
+            const addThemeBtn = document.getElementById('add-theme-btn');
+            const activeThemeTitle = document.getElementById('active-theme-title');
+            const activeThemeDesc = document.getElementById('active-theme-desc');
+            const chatMessages = document.getElementById('chat-messages');
+            const chatInputArea = document.getElementById('chat-input-area');
+            const chatForm = document.getElementById('chat-form');
+            const chatInput = document.getElementById('chat-input');
+
+            addThemeBtn.onclick = () => {
+                const title = prompt("Sugira um Tema para a Roda de Conversa:");
+                if(!title) return;
+                themesNode.get(Gun.text.random(8)).put({
+                    title: title,
+                    creator: user.is.alias,
+                    approved: isMediador,
+                    when: Gun.state()
+                });
+            };
+
+            themesNode.map().on((data, id) => {
+                if(!data || !data.title) return;
+                if(!data.approved && !isMediador) return;
+
+                let themeEl = document.getElementById('theme-'+id);
+                if(!themeEl) {
+                    themeEl = document.createElement('div');
+                    themeEl.id = 'theme-'+id;
+                    themeEl.className = "p-4 border-b border-ink cursor-pointer hover:bg-white transition-all flex flex-col gap-1";
+                    themesList.appendChild(themeEl);
+                }
+
+                const statusTag = data.approved ? '' : '<span class="text-[8px] bg-red-100 text-red-800 px-1 rounded">Pendente</span>';
+                
+                themeEl.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <span class="font-bold text-xs">${data.title} ${statusTag}</span>
+                        ${isMediador ? `<button class="delete-theme text-red-400" data-id="${id}">×</button>` : ''}
+                    </div>
+                    <span class="text-[9px] opacity-40 uppercase tracking-tighter">Por ${data.creator}</span>
+                    ${isMediador && !data.approved ? `<button class="approve-theme text-[9px] font-bold text-green-700 mt-2" data-id="${id}">[APROVAR]</button>` : ''}
+                `;
+
+                themeEl.onclick = (e) => {
+                    if(e.target.tagName === 'BUTTON') return;
+                    selectTheme(id, data.title, data.creator);
+                };
+
+                if(isMediador) {
+                    const dBtn = themeEl.querySelector('.delete-theme');
+                    if(dBtn) dBtn.onclick = () => themesNode.get(id).put(null);
+                    const aBtn = themeEl.querySelector('.approve-theme');
+                    if(aBtn) aBtn.onclick = () => themesNode.get(id).put({ approved: true });
+                }
+
+                if(themesList.querySelector('.italic')) themesList.innerHTML = '';
+            });
+
+            function selectTheme(id, title, creator) {
+                currentThemeId = id;
+                activeThemeTitle.innerText = title;
+                activeThemeDesc.innerText = `Roda iniciada por ${creator}`;
+                chatMessages.innerHTML = '';
+                chatInputArea.classList.remove('hidden');
+
+                const chatNode = gun.get('salinas_chat_v4_' + id);
+                chatNode.map().once((msg) => {
+                    if(!msg || !msg.text) return;
+                    renderMessage(msg);
+                });
+
+                chatForm.onsubmit = (e) => {
+                    e.preventDefault();
+                    const text = chatInput.value.trim();
+                    if(!text) return;
+                    chatNode.set({ who: user.is.alias, text: text, when: Gun.state() });
+                    chatInput.value = '';
+                };
+            }
+
+            function renderMessage(data) {
+                const isMine = data.who === user.is.alias;
+                const time = new Date(data.when).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const div = document.createElement('div');
+                div.className = `flex flex-col ${isMine ? 'items-end' : 'items-start'} animate-fade-in`;
+                div.innerHTML = `
+                    <div class="flex items-center gap-2 mb-1 px-2">
+                        <span class="text-[9px] font-bold uppercase tracking-widest opacity-40">${data.who}</span>
+                        <span class="text-[8px] opacity-20">${time}</span>
+                    </div>
+                    <div class="message-bubble ${isMine ? 'message-mine' : 'message-others'} text-sm">
+                        ${data.text}
+                    </div>
+                `;
+                chatMessages.appendChild(div);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+
+        // Feature: Laboratório Histórico (Produção)
+        function initLaboratorio() {
+            const prodNode = gun.get('salinas_hyperclasse_producao_v2');
+            const editor = document.getElementById('prod-editor');
+            const saveBtn = document.getElementById('save-prod-btn');
+            const recentList = document.getElementById('recent-prods');
+
+            saveBtn.onclick = () => {
+                const text = editor.value.trim();
+                if(!text) return;
+                prodNode.set({ author: user.is.alias, content: text, title: text.substring(0, 30) + '...', when: Gun.state() });
+                editor.value = '';
+                alert("Produção compartilhada!");
+            };
+
+            prodNode.map().once((data) => {
+                if(!data || !data.content) return;
+                const div = document.createElement('div');
+                div.className = "p-4 bg-white bg-opacity-40 border border-ink hover:border-accent cursor-pointer";
+                div.innerHTML = `<p class="text-[9px] font-bold opacity-40 mb-1">${data.author}</p><h5 class="font-serif font-bold text-sm">${data.title}</h5>`;
+                div.onclick = () => { editor.value = data.content; };
+                if(recentList.querySelector('.italic')) recentList.innerHTML = '';
+                recentList.prepend(div);
+            });
+        }
+
+        function initBiblioteca() {}
+    </script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f4ecd8;
+  --color-ink: #1a1a1b;
+  --color-sepia-dark: #433422;
+  --color-sepia-light: #d6c6a5;
+  --color-accent: #8c7851;
+  --font-serif: "Crimson Pro", serif;
+  --font-sans: "Inter", sans-serif;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    background-image: url('https://www.transparenttextures.com/patterns/paper.png');
+    overflow-x: hidden;
+  }
+}
+
+@layer utilities {
+  .glass-sepia {
+    background: rgba(214, 198, 165, 0.3);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(67, 52, 34, 0.1);
+  }
+
+  .sepia-shadow {
+    box-shadow: 0 10px 30px rgba(67, 52, 34, 0.1);
+  }
+
+  .border-ink {
+    border-color: rgba(26, 26, 27, 0.15);
+  }
+  
+  .message-bubble {
+    @apply max-w-[85%] rounded-sm py-3 px-4 mb-3 relative shadow-sm;
+  }
+
+  .message-mine {
+    @apply bg-sepia-dark text-paper self-end border-r-4 border-accent;
+  }
+
+  .message-others {
+    @apply bg-white text-ink self-start border-l-4 border-sepia-light;
+  }
+
+  .wysiwyg-container .rsw-editor {
+    border: none !important;
+    min-height: 100%;
+    outline: none !important;
+  }
+  
+  .wysiwyg-container .rsw-toolbar {
+    border-radius: 0 !important;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--color-paper); }
+::-webkit-scrollbar-thumb { background: var(--color-sepia-light); border-radius: 5px; }
