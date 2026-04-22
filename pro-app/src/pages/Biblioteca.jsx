@@ -1,28 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useGunCollection } from '../hooks/useGun';
 import { gun } from '../lib/gun';
 
 export default function Biblioteca({ isMediador }) {
-  const [docs, setDocs] = useState([]);
-
-  useEffect(() => {
-    const docsNode = gun.get('salinas_hyperclasse_biblioteca_v4');
-    
-    docsNode.map().on((data, id) => {
-      if (!data || !data.title) return;
-      setDocs(prev => {
-        const exists = prev.find(d => d.id === id);
-        if (exists) return prev.map(d => d.id === id ? { ...data, id } : d);
-        return [...prev, { ...data, id }];
-      });
-    });
-
-    return () => docsNode.off();
-  }, []);
+  const docs = useGunCollection('salinas_hyperclasse_biblioteca_v4');
 
   const handleDelete = (id) => {
     gun.get('salinas_hyperclasse_biblioteca_v4').get(id).put(null);
-    setDocs(prev => prev.filter(d => d.id !== id));
   };
+
 
   return (
     <div className="h-full overflow-y-auto p-12 flex-col animate-slide">

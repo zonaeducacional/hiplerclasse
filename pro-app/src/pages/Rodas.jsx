@@ -1,51 +1,26 @@
 import { useEffect, useState, useRef } from 'react';
 import { gun } from '../lib/gun';
+import { useGunCollection } from '../hooks/useGun';
 import Gun from 'gun';
 
 export default function Rodas({ alias, isMediador }) {
-  const [themes, setThemes] = useState([]);
+  const allThemes = useGunCollection('salinas_hyperclasse_temas_v4');
   const [activeTheme, setActiveTheme] = useState(null);
-  const [messages, setMessages] = useState([]);
+  
+  // Filtra temas aprovados ou se for mediador vê tudo
+  const themes = allThemes.filter(t => t.title && (t.approved || isMediador));
+  
+  const messages = useGunCollection(activeTheme ? 'salinas_chat_v4_' + activeTheme.id : null);
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef(null);
 
-  useEffect(() => {
-    const themesNode = gun.get('salinas_hyperclasse_temas_v4');
-    
-    themesNode.map().on((data, id) => {
-      if (!data || !data.title) return;
-      if (!data.approved && !isMediador) return;
-      
-      setThemes(prev => {
-        const exists = prev.find(t => t.id === id);
-        if (exists) return prev.map(t => t.id === id ? { ...data, id } : t);
-        return [...prev, { ...data, id }];
-      });
-    });
-
-    return () => themesNode.off();
-  }, [isMediador]);
-
-  useEffect(() => {
-    if (!activeTheme) return;
-    
-    setMessages([]);
-    const chatNode = gun.get('salinas_chat_v4_' + activeTheme.id);
-    
-    chatNode.map().on((msg, id) => {
-      if (!msg || !msg.text) return;
-      setMessages(prev => {
-        if (prev.find(m => m.id === id)) return prev;
-        return [...prev, { ...msg, id }].sort((a, b) => a.when - b.when);
-      });
-    });
-
-    return () => chatNode.off();
-  }, [activeTheme]);
+  // Ordena mensagens por tempo (o hook retorna sem ordem fixa)
+  const sortedMessages = [...messages].sort((a, b) => a.when - b.when);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [sortedMessages]);
+
 
   const handleAddTheme = () => {
     const title = prompt("Sugira um Tema para o Círculo de Diálogo:");
@@ -74,9 +49,9 @@ export default function Rodas({ alias, isMediador }) {
   const deleteTheme = (e, id) => {
     e.stopPropagation();
     gun.get('salinas_hyperclasse_temas_v4').get(id).put(null);
-    setThemes(prev => prev.filter(t => t.id !== id));
     if (activeTheme?.id === id) setActiveTheme(null);
   };
+
 
   const approveTheme = (e, id) => {
     e.stopPropagation();
@@ -146,12 +121,13 @@ export default function Rodas({ alias, isMediador }) {
         <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-2 scroll-smooth bg-white bg-opacity-10">
           {!activeTheme ? (
             <div className="text-center py-10 opacity-30 italic text-sm">Aguardando seleção de tema...</div>
-          ) : messages.length === 0 ? (
+          ) : sortedMessages.length === 0 ? (
             <div className="text-center py-10 opacity-30 italic text-sm">Nenhuma mensagem ainda. Seja o primeiro!</div>
           ) : (
-            messages.map(msg => {
+            sortedMessages.map(msg => {
               const isMine = msg.who === alias;
               const time = new Date(msg.when).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
               return (
                 <div key={msg.id} className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} animate-fadeIn`}>
                   <div className="flex items-center gap-2 mb-1 px-2">
